@@ -97,8 +97,13 @@ frappe.query_reports["Items Needed"] = {
 	},
 
 	make_material_request(report) {
-		const indexes = frappe.query_report.datatable.rowmanager.getCheckedRows();
-		const selected_rows = indexes.map((i) => frappe.query_report.data[i]);
+		// Fix: Use the proper method to get selected rows
+		let selected_rows = [];
+		
+		if (frappe.query_report.datatable) {
+			const checked_rows = frappe.query_report.datatable.rowmanager.getCheckedRows();
+			selected_rows = checked_rows.map((i) => frappe.query_report.data[i]);
+		}
 
 		if (!selected_rows.length) {
 			frappe.throw({
@@ -121,8 +126,13 @@ frappe.query_reports["Items Needed"] = {
 	},
 
 	make_purchase_order(report) {
-		const indexes = frappe.query_report.datatable.rowmanager.getCheckedRows();
-		const selected_rows = indexes.map((i) => frappe.query_report.data[i]);
+		// Fix: Use the proper method to get selected rows
+		let selected_rows = [];
+		
+		if (frappe.query_report.datatable) {
+			const checked_rows = frappe.query_report.datatable.rowmanager.getCheckedRows();
+			selected_rows = checked_rows.map((i) => frappe.query_report.data[i]);
+		}
 
 		if (!selected_rows.length) {
 			frappe.throw({

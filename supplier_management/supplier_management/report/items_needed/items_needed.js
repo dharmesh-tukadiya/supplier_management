@@ -66,18 +66,20 @@ frappe.query_reports["Items Needed"] = {
 
 	formatter(value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
-		
+
 		// Highlight negative projected qty in red
 		if (column.fieldname === "projected_qty" && data.projected_qty < 0) {
 			value = `<span style="color:red; font-weight: bold;">${value}</span>`;
 		}
-		
+
 		return value;
 	},
 
 	get_datatable_options(options) {
 		return Object.assign(options, {
 			checkboxColumn: true,
+			// inlineFilters: true,
+			// showTotalRow: true
 		});
 	},
 
@@ -97,14 +99,15 @@ frappe.query_reports["Items Needed"] = {
 	},
 
 	make_material_request(report) {
-		// Fix: Use the proper method to get selected rows
 		let selected_rows = [];
-		
+
+		// Get selected rows from the datatable
 		if (frappe.query_report.datatable) {
 			const checked_rows = frappe.query_report.datatable.rowmanager.getCheckedRows();
-			selected_rows = checked_rows.map((i) => frappe.query_report.data[i]);
+			selected_rows = checked_rows.map(i => frappe.query_report.data[i]);
 		}
 
+		// Validate selected rows
 		if (!selected_rows.length) {
 			frappe.throw({
 				message: __("Please select rows to create Material Request"),
@@ -113,22 +116,70 @@ frappe.query_reports["Items Needed"] = {
 			});
 		}
 
-		// Using the exact Sales Order pattern for creating Material Request
-		frappe.new_doc("Material Request", {
-			material_request_type: "Purchase",
-			items: selected_rows.map((row) => ({
-				item_code: row.item_code,
-				warehouse: row.warehouse,
-				qty: Math.abs(row.projected_qty),
-				schedule_date: frappe.datetime.add_days(frappe.datetime.get_today(), 7),
-			})),
+		// Filter valid rows
+		const valid_rows = selected_rows.filter(row => {
+			if (!row.item_code) return false;
+			if (!row.projected_qty || isNaN(row.projected_qty)) return false;
+			return true;
 		});
-	},
+
+		if (!valid_rows.length) {
+			frappe.throw(__("No valid items to create Material Request."));
+		}
+
+		// Create a new Material Request document
+		frappe.model.with_doctype("Material Request", () => {
+			const doc = frappe.model.get_new_doc("Material Request");
+			doc.material_request_type = "Purchase";
+			doc.schedule_date = frappe.datetime.add_days(frappe.datetime.get_today(), 7);
+
+			// Add valid rows as child items
+			valid_rows.forEach(row => {
+				const item = frappe.model.add_child(doc, "items");
+				item.item_code = row.item_code;
+				item.qty = Math.abs(row.projected_qty);
+				item.warehouse = row.warehouse;
+				item.schedule_date = frappe.datetime.add_days(frappe.datetime.get_today(), 7);
+
+				// Fetch additional item details to auto-populate UOM
+				frappe.call({
+					method: "erpnext.stock.get_item_details.get_item_details",
+					args: {
+						args: {
+							item_code: item.item_code,
+							warehouse: item.warehouse,
+							doctype: doc.doctype,
+							company: doc.company,
+							qty: item.qty,
+						},
+					},
+					callback: function (r) {
+						if (!r.exc && r.message) {
+							item.uom = r.message.uom; // Set UOM from item master
+							item.stock_uom = r.message.stock_uom; // Set stock UOM
+							item.conversion_factor = r.message.conversion_factor; // Set conversion factor
+							item.item_name = r.message.item_name; // Set item name
+							refresh_field("items");
+						}
+					},
+				});
+			});
+
+			// Navigate to the new Material Request form
+			frappe.set_route("Form", "Material Request", doc.name).then(() => {
+				// Refresh the form to show the added items
+				cur_frm.refresh_fields();
+			});
+		});
+	}
+
+
+	,
 
 	make_purchase_order(report) {
-		// Fix: Use the proper method to get selected rows
+		// Get selected rows
 		let selected_rows = [];
-		
+
 		if (frappe.query_report.datatable) {
 			const checked_rows = frappe.query_report.datatable.rowmanager.getCheckedRows();
 			selected_rows = checked_rows.map((i) => frappe.query_report.data[i]);
@@ -142,88 +193,58 @@ frappe.query_reports["Items Needed"] = {
 			});
 		}
 
-		// Using exact Sales Order dialog pattern
-		var dialog = new frappe.ui.Dialog({
-			title: __("Select Items"),
-			size: "large",
-			fields: [
-				{
-					fieldtype: "Check",
-					label: __("Against Default Supplier"),
-					fieldname: "against_default_supplier",
-					default: 0,
-				},
-				{
-					fieldname: "items_for_po",
-					fieldtype: "Table",
-					label: __("Select Items"),
-					fields: [
-						{
-							fieldtype: "Data",
-							fieldname: "item_code",
-							label: __("Item"),
-							read_only: 1,
-							in_list_view: 1,
-						},
-						{
-							fieldtype: "Data",
-							fieldname: "warehouse",
-							label: __("Warehouse"),
-							read_only: 1,
-							in_list_view: 1,
-						},
-						{
-							fieldtype: "Float",
-							fieldname: "pending_qty",
-							label: __("Required Qty"),
-							read_only: 1,
-							in_list_view: 1,
-						},
-						{
-							fieldtype: "Data",
-							fieldname: "projected_qty",
-							label: __("Projected Qty"),
-							read_only: 1,
-							in_list_view: 1,
-						},
-					],
-					data: selected_rows.map((row) => ({
-						item_code: row.item_code,
-						warehouse: row.warehouse,
-						pending_qty: Math.abs(row.projected_qty),
-						projected_qty: row.projected_qty,
-					})),
-					cannot_add_rows: true,
-					cannot_delete_rows: true,
-				},
-			],
-			primary_action_label: __("Create Purchase Order"),
-			primary_action(args) {
-				if (!args) return;
-
-				let selected_items = dialog.fields_dict.items_for_po.grid.get_selected_children();
-				if (selected_items.length == 0) {
-					frappe.throw({
-						message: __("Please select Items from the Table"),
-						title: __("Items Required"),
-						indicator: "blue",
-					});
-				}
-
-				dialog.hide();
-
-				// Create Purchase Order directly (simplified from Sales Order pattern)
-				frappe.new_doc("Purchase Order", {
-					items: selected_items.map((item) => ({
-						item_code: item.item_code,
-						warehouse: item.warehouse,
-						qty: item.pending_qty,
-						schedule_date: frappe.datetime.add_days(frappe.datetime.get_today(), 7),
-					})),
-				});
-			},
+		// Filter valid rows
+		const valid_rows = selected_rows.filter((row) => {
+			if (!row.item_code) return false;
+			if (!row.projected_qty || isNaN(row.projected_qty)) return false;
+			return true;
 		});
 
-		dialog.show();
-	},
+		if (!valid_rows.length) {
+			frappe.throw(__("No valid items to create Purchase Order."));
+		}
+
+		// Create a new Purchase Order document
+		frappe.model.with_doctype("Purchase Order", () => {
+			const doc = frappe.model.get_new_doc("Purchase Order");
+
+			// Add valid rows as child items
+			valid_rows.forEach((row) => {
+				const item = frappe.model.add_child(doc, "items");
+				item.item_code = row.item_code;
+				item.qty = Math.abs(row.projected_qty);
+				item.warehouse = row.warehouse;
+				item.schedule_date = frappe.datetime.add_days(frappe.datetime.get_today(), 7);
+
+				// Fetch additional item details to auto-populate UOM and other fields
+				frappe.call({
+					method: "erpnext.stock.get_item_details.get_item_details",
+					args: {
+						args: {
+							item_code: item.item_code,
+							warehouse: item.warehouse,
+							doctype: doc.doctype,
+							company: doc.company,
+							qty: item.qty,
+						},
+					},
+					callback: function (r) {
+						if (!r.exc && r.message) {
+							item.uom = r.message.uom; // Set UOM from item master
+							item.stock_uom = r.message.stock_uom; // Set stock UOM
+							item.conversion_factor = r.message.conversion_factor; // Set conversion factor
+							item.item_name = r.message.item_name; // Set item name
+							refresh_field("items");
+						}
+					},
+				});
+			});
+
+			// Navigate to the new Purchase Order form
+			frappe.set_route("Form", "Purchase Order", doc.name).then(() => {
+				// Refresh the form to show the added items
+				cur_frm.refresh_fields();
+			});
+		});
+	}
 };

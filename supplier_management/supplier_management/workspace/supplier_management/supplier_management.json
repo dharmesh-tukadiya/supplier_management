@@ -1,0 +1,58 @@
+{
+    "content": "[{\"id\":\"ttpROKW9vkk\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports &amp; Masters</b></span>\",\"col\":12}},{\"id\":\"-76QPdbBHy\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales Pipeline\",\"col\":4}},{\"id\":\"_YmGwzVWRr\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"id\":\"Bma1PxoXk3\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+    "creation": "2020-01-23 14:48:30.183272",
+    "custom_blocks": [],
+    "docstatus": 0,
+    "doctype": "Workspace",
+    "for_user": "",
+    "hide_custom": 0,
+    "icon": "crm",
+    "idx": 0,
+    "is_hidden": 0,
+    "label": "Supplier Management",
+    "links": [
+        {
+            "hidden": 0,
+            "is_query_report": 0,
+            "label": "Reports",
+            "link_count": 0,
+            "onboard": 0,
+            "type": "Card Break"
+        },
+        {
+            "dependencies": "Lead",
+            "hidden": 0,
+            "is_query_report": 1,
+            "label": "Supplier Needs",
+            "link_count": 0,
+            "link_to": "Supplier Needs",
+            "link_type": "Report",
+            "onboard": 1,
+            "type": "Link"
+        },
+        {
+            "dependencies": "",
+            "hidden": 0,
+            "is_query_report": 1,
+            "label": "Items Needed",
+            "link_count": 0,
+            "link_to": "Items Needed",
+            "link_type": "Report",
+            "onboard": 1,
+            "type": "Link"
+        }
+    ],
+    "modified": "2023-09-14 12:11:03.968048",
+    "modified_by": "Administrator",
+    "module": "Supplier Management",
+    "name": "Supplier Management",
+    "number_cards": [],
+    "owner": "Administrator",
+    "parent_page": "",
+    "public": 1,
+    "quick_lists": [],
+    "restrict_to_domain": "",
+    "roles": [],
+    "sequence_id": 17.0,
+    "title": "Supplier Management"
+}

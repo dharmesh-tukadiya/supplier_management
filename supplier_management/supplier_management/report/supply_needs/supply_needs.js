@@ -1,7 +1,7 @@
 // Copyright (c) 2013, Frappe Technologies Pvt. Ltd. and contributors
 // For license information, please see license.txt
 
-frappe.query_reports["Items Needed"] = {
+frappe.query_reports["Supply Needs"] = {
 	filters: [
 		{
 			fieldname: "item_code",
@@ -24,59 +24,62 @@ frappe.query_reports["Items Needed"] = {
 	],
 
 	columns: [
-		{
-			label: __("Item"),
-			fieldname: "item_code",
-			fieldtype: "Link",
-			options: "Item",
-			width: 120,
-		},
-		{
-			label: __("Warehouse"),
-			fieldname: "warehouse",
-			fieldtype: "Link",
-			options: "Warehouse",
-			width: 120,
-		},
-		{
-			label: __("Supplier"),
-			fieldname: "supplier",
-			fieldtype: "Link",
-			options: "Supplier",
-			width: 120,
-		},
-		{
-			label: __("Actual"),
-			fieldname: "actual_qty",
-			fieldtype: "Float",
-			width: 90,
-		},
-		{
-			label: __("Requested"),
-			fieldname: "indented_qty",
-			fieldtype: "Float",
-			width: 90,
-		},
-		{
-			label: __("Reserved"),
-			fieldname: "reserved_qty",
-			fieldtype: "Float",
-			width: 90,
-		},
-		{
-			label: __("Ordered"),
-			fieldname: "ordered_qty",
-			fieldtype: "Float",
-			width: 90,
-		},
-		{
-			label: __("Projected"),
-			fieldname: "projected_qty",
-			fieldtype: "Float",
-			width: 90,
-		},
+		columns = [
+			{
+				"label": "Item",
+				"fieldname": "item_code",
+				"fieldtype": "Link",
+				"options": "Item",
+				"width": 120,
+			},
+			{
+				"label": "Warehouse",
+				"fieldname": "warehouse",
+				"fieldtype": "Link",
+				"options": "Warehouse",
+				"width": 120,
+			},
+			{
+				"label": "Supplier",
+				"fieldname": "supplier",
+				"fieldtype": "Link",
+				"options": "Supplier",
+				"width": 120,
+			},
+			{
+				"label": "Available Qty",
+				"fieldname": "actual_qty",
+				"fieldtype": "Float",
+				"width": 150,
+			},
+			{
+				"label": "Suggested Qty To Order",
+				"fieldname": "projected_qty",
+				"fieldtype": "Float",
+				"width": 220,
+				"editable": 1,
+			},
+			{
+				"label": "Required Qty",
+				"fieldname": "reserved_qty",
+				"fieldtype": "Float",
+				"width": 150,
+			},
+			{
+				"label": "Receivable Qty",
+				"fieldname": "indented_qty",
+				"fieldtype": "Float",
+				"width": 150,
+			},
+			{
+				"label": "Ordered",
+				"fieldname": "ordered_qty",
+				"fieldtype": "Float",
+				"width": 90,
+			},
+		]
 	],
-
+	projectedQtyIndex: 6,
 	formatter(value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
 
@@ -110,16 +113,37 @@ frappe.query_reports["Items Needed"] = {
 		// Set Create as primary button group
 		report.page.set_inner_btn_group_as_primary(__("Create"));
 	},
+	parseFormattedNumber(value, numberFormat) {
+		// Infer separators from number format
+		let thousands_sep = numberFormat.includes(' ') ? ' ' : ',';
+		let decimal_sep = numberFormat.includes(',') ? ',' : '.';
 
+		// Replace thousands separator (remove it)
+		value = value.replace(new RegExp('\\' + thousands_sep, 'g'), '');
+
+		// Replace decimal separator with dot
+		if (decimal_sep !== '.') {
+			value = value.replace(decimal_sep, '.');
+		}
+
+		// Convert to float
+		return parseFloat(value);
+	},
 	make_material_request(report) {
 		let selected_rows = [];
+		const numberFormat = get_number_format();
 
 		// Get selected rows from the datatable
 		if (frappe.query_report.datatable) {
 			const checked_rows = frappe.query_report.datatable.rowmanager.getCheckedRows();
-			selected_rows = checked_rows.map(i => frappe.query_report.data[i]);
+			selected_rows = checked_rows.map(i => {
+				let rowData = frappe.query_report.data[i];
+				let domRow = frappe.query_report.datatable.rowmanager.getRow$(i);
+				let projectedQtyText = jQuery(domRow).find(`[data-col-index=${this.projectedQtyIndex}]`).text().trim();
+				rowData.projected_qty = this.parseFormattedNumber(projectedQtyText, numberFormat);
+				return rowData;
+			});
 		}
-
 		// Validate selected rows
 		if (!selected_rows.length) {
 			frappe.throw({
@@ -192,7 +216,13 @@ frappe.query_reports["Items Needed"] = {
 
 		if (frappe.query_report.datatable) {
 			const checked_rows = frappe.query_report.datatable.rowmanager.getCheckedRows();
-			selected_rows = checked_rows.map((i) => frappe.query_report.data[i]);
+			selected_rows = checked_rows.map(i => {
+				let rowData = frappe.query_report.data[i];
+				let domRow = frappe.query_report.datatable.rowmanager.getRow$(i);
+				let projectedQtyText = jQuery(domRow).find(`[data-col-index=${this.projectedQtyIndex}]`).text().trim();
+				rowData.projected_qty = this.parseFormattedNumber(projectedQtyText, numberFormat);
+				return rowData;
+			});
 		}
 
 		if (!selected_rows.length) {

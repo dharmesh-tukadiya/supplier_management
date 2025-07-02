@@ -20,23 +20,12 @@
             "type": "Card Break"
         },
         {
-            "dependencies": "Lead",
-            "hidden": 0,
-            "is_query_report": 1,
-            "label": "Supplier Needs",
-            "link_count": 0,
-            "link_to": "Supplier Needs",
-            "link_type": "Report",
-            "onboard": 1,
-            "type": "Link"
-        },
-        {
             "dependencies": "",
             "hidden": 0,
             "is_query_report": 1,
-            "label": "Items Needed",
+            "label": "Supply Needs",
             "link_count": 0,
-            "link_to": "Items Needed",
+            "link_to": "Supply Needs",
             "link_type": "Report",
             "onboard": 1,
             "type": "Link"

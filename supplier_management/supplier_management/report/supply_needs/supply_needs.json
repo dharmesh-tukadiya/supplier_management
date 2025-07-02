@@ -10,10 +10,10 @@
     "modified": "2017-02-24 20:06:00.761719",
     "modified_by": "Administrator",
     "module": "Supplier Management",
-    "name": "Items Needed",
+    "name": "Supply Needs",
     "owner": "Administrator",
     "ref_doctype": "Material Request",
-    "report_name": "Items Needed",
+    "report_name": "Supply Needs",
     "report_type": "Script Report",
     "roles": [
         {

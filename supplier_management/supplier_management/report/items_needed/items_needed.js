@@ -15,6 +15,12 @@ frappe.query_reports["Items Needed"] = {
 			fieldtype: "Link",
 			options: "Warehouse",
 		},
+		{
+			fieldname: "supplier",
+			label: __("Supplier"),
+			fieldtype: "Link",
+			options: "Supplier",
+		},
 	],
 
 	columns: [
@@ -30,6 +36,13 @@ frappe.query_reports["Items Needed"] = {
 			fieldname: "warehouse",
 			fieldtype: "Link",
 			options: "Warehouse",
+			width: 120,
+		},
+		{
+			label: __("Supplier"),
+			fieldname: "supplier",
+			fieldtype: "Link",
+			options: "Supplier",
 			width: 120,
 		},
 		{
@@ -171,10 +184,7 @@ frappe.query_reports["Items Needed"] = {
 				cur_frm.refresh_fields();
 			});
 		});
-	}
-
-
-	,
+	},
 
 	make_purchase_order(report) {
 		// Get selected rows
@@ -246,5 +256,5 @@ frappe.query_reports["Items Needed"] = {
 				cur_frm.refresh_fields();
 			});
 		});
-	}
+	},
 };

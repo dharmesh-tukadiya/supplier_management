@@ -26,7 +26,7 @@ frappe.query_reports["Supply Needs"] = {
 	columns: [
 		columns = [
 			{
-				"label": _("Image"),
+				"label": "Image",
 				"fieldname": "image",
 				"fieldtype": "Data",
 				"width": 100,
@@ -85,7 +85,7 @@ frappe.query_reports["Supply Needs"] = {
 			},
 		]
 	],
-	projectedQtyIndex: 6,
+	projectedQtyIndex: 7,
 	formatter(value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
 

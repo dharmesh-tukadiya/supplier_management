@@ -26,6 +26,12 @@ frappe.query_reports["Supply Needs"] = {
 	columns: [
 		columns = [
 			{
+				"label": _("Image"),
+				"fieldname": "image",
+				"fieldtype": "Data",
+				"width": 100,
+			},
+			{
 				"label": "Item",
 				"fieldname": "item_code",
 				"fieldtype": "Link",

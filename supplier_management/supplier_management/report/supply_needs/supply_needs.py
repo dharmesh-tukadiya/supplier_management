@@ -13,6 +13,12 @@ def execute(filters=None):
 def get_columns():
     columns = [
         {
+            "label": _("Image"),
+            "fieldname": "image",
+            "fieldtype": "Data",
+            "width": 100,
+        },
+        {
             "label": _("Item"),
             "fieldname": "item_code",
             "fieldtype": "Link",
@@ -83,6 +89,7 @@ def get_data(filters):
             item_table.name == supplier_item_table.parent
         )  # Adjust based on actual column
         .select(
+            item_table.image,  # Add image field from Item table
             bin_table.item_code,
             bin_table.warehouse,
             supplier_item_table.supplier,
@@ -108,6 +115,14 @@ def get_data(filters):
 
     # Fetch the query result
     result = query.run(as_dict=1)
+
+    # Format image URLs for display
+    for row in result:
+        if row.get("image"):
+            # Create HTML img tag for the image
+            row["image"] = f'<img src="{row["image"]}" style="max-width: 200px; max-height: 200px; object-fit: cover;" />'
+        else:
+            row["image"] = ""
 
     # Check for duplicate item_code within the same warehouse
     item_warehouse_map = {}

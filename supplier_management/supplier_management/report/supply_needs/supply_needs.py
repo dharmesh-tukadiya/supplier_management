@@ -40,7 +40,7 @@ def get_columns():
             "width": 150,
         },
         {
-            "label": _("Suggested Qty To Order"),
+            "label": _("Backorder Qty"),
             "fieldname": "projected_qty",
             "fieldtype": "Float",
             "width": 220,
@@ -53,16 +53,16 @@ def get_columns():
             "width": 150,
         },
         {
-            "label": _("Receivable Qty"),
+            "label": _("Requested Qty"),
             "fieldname": "indented_qty",
             "fieldtype": "Float",
             "width": 150,
         },
         {
-            "label": _("Ordered"),
+            "label": _("Receivable Qty"),
             "fieldname": "ordered_qty",
             "fieldtype": "Float",
-            "width": 90,
+            "width": 150,
         },
     ]
     return columns
@@ -109,39 +109,46 @@ def get_data(filters):
     # Fetch the query result
     result = query.run(as_dict=1)
 
-    # Check for duplicate item_code
-    item_code_map = {}
+    # Check for duplicate item_code within the same warehouse
+    item_warehouse_map = {}
     for row in result:
         item_code = row.get("item_code")
+        warehouse = row.get("warehouse") or "Unknown Warehouse"
         supplier = row.get("supplier") or "Unknown Supplier"
-        if item_code:
-            if item_code in item_code_map:
-                item_code_map[item_code].append(supplier)
-            else:
-                item_code_map[item_code] = [supplier]
 
-    # Find duplicates
-    duplicates = {
-        item: suppliers
-        for item, suppliers in item_code_map.items()
-        if len(suppliers) > 1
-    }
+        if item_code:
+            # Create a unique key combining item_code and warehouse
+            key = (item_code, warehouse)
+            if key in item_warehouse_map:
+                item_warehouse_map[key].append(supplier)
+            else:
+                item_warehouse_map[key] = [supplier]
+
+    # Find duplicates (same item_code in same warehouse with multiple suppliers)
+    duplicates = {}
+    for (item_code, warehouse), suppliers in item_warehouse_map.items():
+        if len(suppliers) > 1:
+            if item_code not in duplicates:
+                duplicates[item_code] = {}
+            duplicates[item_code][warehouse] = suppliers
 
     if duplicates:
         # Prepare the message content
-        message = "<br>".join(
-            [
-                f"{item} => {', '.join(suppliers)}"
-                for item, suppliers in duplicates.items()
-            ]
-        )
+        message_parts = []
+        for item_code, warehouses in duplicates.items():
+            for warehouse, suppliers in warehouses.items():
+                message_parts.append(
+                    f"{item_code} (Warehouse: {warehouse}) => {', '.join(suppliers)}"
+                )
+
+        message = "<br>".join(message_parts)
 
         # Show the popup message
         frappe.msgprint(
             title=_("Duplicate Item Codes"),
-            msg=_("The following item codes have multiple suppliers:<br>{0}").format(
-                message
-            ),
+            msg=_(
+                "The following item codes have multiple suppliers in the same warehouse:<br>{0}"
+            ).format(message),
             indicator="orange",
         )
 

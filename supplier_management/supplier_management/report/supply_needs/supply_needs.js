@@ -100,6 +100,7 @@ frappe.query_reports["Supply Needs"] = {
 	get_datatable_options(options) {
 		return Object.assign(options, {
 			checkboxColumn: true,
+			cellHeight: 100,
 			// inlineFilters: true,
 			// showTotalRow: true
 		});

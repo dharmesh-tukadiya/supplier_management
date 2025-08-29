@@ -120,7 +120,7 @@ def get_data(filters):
     for row in result:
         if row.get("image"):
             # Create HTML img tag for the image
-            row["image"] = f'<img src="{row["image"]}" style="max-width: 200px; max-height: 200px; object-fit: cover;" />'
+            row["image"] = f'<img src="{row["image"]}" style="max-width: 100px; max-height: 100px; object-fit: cover;" />'
         else:
             row["image"] = ""
 
